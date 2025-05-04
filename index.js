@@ -3,7 +3,7 @@ const express = require('express');
 const fs = require('fs');
 const qrcode = require('qrcode-terminal');
 
-const { state, saveState } = useSingleFileAuthState('./auth_info.json'); // IMPORTANTE
+const { state, saveState } = useSingleFileAuthState('./auth_info.json');
 
 const app = express();
 app.use(express.json());
@@ -11,7 +11,7 @@ app.use(express.json());
 async function startSocket() {
   const sock = makeWASocket({
     auth: state,
-    printQRInTerminal: true // MUY IMPORTANTE
+    printQRInTerminal: true
   });
 
   sock.ev.on('creds.update', saveState);
@@ -21,8 +21,8 @@ async function startSocket() {
     if (connection === 'open') {
       console.log('✅ ¡WhatsApp conectado!');
     } else if (connection === 'close') {
-      console.log('❌ Conexión cerrada. ¿Reconectar?', update);
-      startSocket(); // intenta reconectar
+      console.log('❌ Conexión cerrada. Reconectando...');
+      startSocket();
     }
   });
 
@@ -32,13 +32,13 @@ async function startSocket() {
       await sock.sendMessage(to + '@s.whatsapp.net', { text: message });
       res.send({ status: 'enviado' });
     } catch (e) {
-      console.error('Error al enviar:', e);
+      console.error('❌ Error al enviar:', e);
       res.status(500).send({ status: 'error', error: e.toString() });
     }
   });
 
   app.listen(3000, () => {
-    console.log('Servidor escuchando en http://localhost:3000');
+    console.log('📡 Servidor escuchando en http://localhost:3000');
   });
 }
 
