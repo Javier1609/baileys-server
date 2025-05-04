@@ -1,45 +1,47 @@
-const { default: makeWASocket, useSingleFileAuthState } = require('@whiskeysockets/baileys');
-const express = require('express');
-const fs = require('fs');
+const { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
-
-const { state, saveState } = useSingleFileAuthState('./auth_info.json');
-
+const express = require('express');
 const app = express();
+
 app.use(express.json());
 
-async function startSocket() {
-  const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: true
-  });
+let sock;
 
-  sock.ev.on('creds.update', saveState);
+async function iniciarWhatsApp() {
+    const { state, saveCreds } = await useMultiFileAuthState('./auth');
+    const { version } = await fetchLatestBaileysVersion();
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect } = update;
-    if (connection === 'open') {
-      console.log('✅ ¡WhatsApp conectado!');
-    } else if (connection === 'close') {
-      console.log('❌ Conexión cerrada. Reconectando...');
-      startSocket();
-    }
-  });
+    sock = makeWASocket({
+        version,
+        auth: state,
+        printQRInTerminal: true
+    });
 
-  app.post('/send', async (req, res) => {
-    const { to, message } = req.body;
-    try {
-      await sock.sendMessage(to + '@s.whatsapp.net', { text: message });
-      res.send({ status: 'enviado' });
-    } catch (e) {
-      console.error('❌ Error al enviar:', e);
-      res.status(500).send({ status: 'error', error: e.toString() });
-    }
-  });
+    sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+        if (qr) qrcode.generate(qr, { small: true });
+        if (connection === 'close') {
+            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
+            if (shouldReconnect) iniciarWhatsApp();
+        }
+    });
 
-  app.listen(3000, () => {
-    console.log('📡 Servidor escuchando en http://localhost:3000');
-  });
+    sock.ev.on('creds.update', saveCreds);
 }
 
-startSocket();
+iniciarWhatsApp();
+
+// ENDPOINT para recibir mensajes
+app.post('/send', async (req, res) => {
+    const { to, message } = req.body;
+    try {
+        await sock.sendMessage(to + '@s.whatsapp.net', { text: message });
+        return res.json({ status: 'ok' });
+    } catch (err) {
+        console.error('❌ Error enviando mensaje:', err);
+        return res.status(500).json({ error: 'Error enviando mensaje' });
+    }
+});
+
+app.listen(3000, () => {
+    console.log('Servidor escuchando en http://localhost:3000');
+});
