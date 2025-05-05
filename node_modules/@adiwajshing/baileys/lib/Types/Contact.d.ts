@@ -6,13 +6,6 @@ export interface Contact {
     notify?: string;
     /** I have no idea */
     verifiedName?: string;
-    /**
-     * Url of the profile picture of the contact
-     *
-     * 'changed' => if the profile picture has changed
-     * null => if the profile picture has not been set (default profile picture)
-     * any other string => url of the profile picture
-     */
-    imgUrl?: string | null | 'changed';
+    imgUrl?: string;
     status?: string;
 }

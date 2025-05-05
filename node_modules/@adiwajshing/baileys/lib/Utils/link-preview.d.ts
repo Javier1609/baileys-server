@@ -1,17 +1,7 @@
-import { Logger } from 'pino';
-import { WAMediaUploadFunction, WAUrlInfo } from '../Types';
+import { WAUrlInfo } from '../Types';
 export declare type URLGenerationOptions = {
     thumbnailWidth: number;
-    fetchOpts: {
-        /** Timeout in ms */
-        timeout: number;
-        proxyUrl?: string;
-        headers?: {
-            [key: string]: string;
-        };
-    };
-    uploadImage?: WAMediaUploadFunction;
-    logger?: Logger;
+    timeoutMs: number;
 };
 /**
  * Given a piece of text, checks for any URL present, generates link preview for the same and returns it
